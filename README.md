@@ -29,5 +29,3 @@ data/
 Required files:
 - movies.csv
 - ratings.csv
-
-- 
