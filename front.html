@@ -1,0 +1,1763 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CineMatch — Movie Recommendations</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #0a0a0f;
+        --surface: #12121a;
+        --surface2: #1a1a26;
+        --surface3: #22223a;
+        --border: rgba(255, 255, 255, 0.07);
+        --border-hover: rgba(255, 255, 255, 0.15);
+        --text: #f0ede8;
+        --muted: #8a8790;
+        --accent: #e8c87a;
+        --accent2: #c47a5a;
+        --score-high: #7ac87a;
+        --score-mid: #c8b87a;
+        --score-low: #c87a7a;
+        --green: #5ab87a;
+        --red: #c86a6a;
+        --blue: #6a9ec8;
+        --font-display: "Playfair Display", Georgia, serif;
+        --font-body: "DM Sans", system-ui, sans-serif;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--font-body);
+        font-size: 15px;
+        line-height: 1.6;
+        min-height: 100vh;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+        pointer-events: none;
+        z-index: 0;
+        opacity: 0.4;
+      }
+
+      .shell {
+        position: relative;
+        z-index: 1;
+      }
+
+      /* ── HEADER ── */
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.2rem 2.5rem;
+        border-bottom: 1px solid var(--border);
+        backdrop-filter: blur(10px);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: rgba(10, 10, 15, 0.88);
+        gap: 1rem;
+      }
+
+      .logo {
+        font-family: var(--font-display);
+        font-size: 1.4rem;
+        font-style: italic;
+        color: var(--accent);
+        letter-spacing: -0.02em;
+        flex-shrink: 0;
+      }
+      .logo span {
+        color: var(--text);
+        font-style: normal;
+      }
+
+      .header-controls {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+      }
+
+      .user-field {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 99px;
+        padding: 0.3rem 0.3rem 0.3rem 0.9rem;
+        transition: border-color 0.2s;
+      }
+      .user-field:focus-within {
+        border-color: var(--accent);
+      }
+      .user-field label {
+        font-size: 11px;
+        color: var(--muted);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+      .user-field input {
+        background: none;
+        border: none;
+        outline: none;
+        color: var(--text);
+        font-family: var(--font-body);
+        font-size: 14px;
+        width: 52px;
+        text-align: center;
+      }
+
+      .btn {
+        border: none;
+        border-radius: 99px;
+        font-family: var(--font-body);
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        transition:
+          opacity 0.2s,
+          transform 0.15s;
+        letter-spacing: 0.02em;
+        padding: 0.4rem 1rem;
+        white-space: nowrap;
+      }
+      .btn:hover {
+        opacity: 0.85;
+      }
+      .btn:active {
+        transform: scale(0.97);
+      }
+      .btn-primary {
+        background: var(--accent);
+        color: #0a0a0f;
+      }
+      .btn-ghost {
+        background: transparent;
+        color: var(--muted);
+        border: 1px solid var(--border);
+      }
+      .btn-ghost:hover {
+        color: var(--text);
+        border-color: var(--border-hover);
+      }
+      .btn-danger {
+        background: transparent;
+        color: var(--red);
+        border: 1px solid rgba(200, 106, 106, 0.3);
+      }
+      .btn-danger:hover {
+        background: rgba(200, 106, 106, 0.1);
+        border-color: var(--red);
+      }
+
+      /* ── NAV TABS ── */
+      .nav-tabs {
+        display: flex;
+        gap: 0;
+        border-bottom: 1px solid var(--border);
+        padding: 0 2.5rem;
+      }
+      .tab {
+        background: none;
+        border: none;
+        color: var(--muted);
+        font-family: var(--font-body);
+        font-size: 13px;
+        padding: 0.75rem 1.1rem;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        transition:
+          color 0.2s,
+          border-color 0.2s;
+        letter-spacing: 0.02em;
+      }
+      .tab.active {
+        color: var(--accent);
+        border-bottom-color: var(--accent);
+      }
+      .tab:hover:not(.active) {
+        color: var(--text);
+      }
+
+      /* ── PAGE VIEWS ── */
+      .page {
+        display: none;
+      }
+      .page.active {
+        display: block;
+      }
+
+      /* ── HERO ── */
+      .hero {
+        padding: 3rem 2.5rem 2rem;
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 2rem;
+      }
+      .hero-title {
+        font-family: var(--font-display);
+        font-size: clamp(2rem, 5vw, 3.4rem);
+        line-height: 1.1;
+        letter-spacing: -0.03em;
+        max-width: 480px;
+      }
+      .hero-title em {
+        font-style: italic;
+        color: var(--accent);
+        display: block;
+      }
+      .hero-sub {
+        color: var(--muted);
+        font-size: 13px;
+        max-width: 260px;
+        text-align: right;
+        line-height: 1.8;
+      }
+
+      /* ── SECTION LABEL ── */
+      .section-label {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1.25rem;
+        padding: 0 2.5rem;
+      }
+      .section-label h2 {
+        font-family: var(--font-display);
+        font-size: 1.25rem;
+        font-weight: 400;
+        letter-spacing: -0.01em;
+      }
+      .pill {
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 99px;
+        font-size: 10px;
+        color: var(--muted);
+        padding: 2px 9px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+      .pill-green {
+        background: rgba(90, 184, 122, 0.12);
+        border-color: rgba(90, 184, 122, 0.3);
+        color: var(--green);
+      }
+      .pill-blue {
+        background: rgba(106, 158, 200, 0.12);
+        border-color: rgba(106, 158, 200, 0.3);
+        color: var(--blue);
+      }
+      .pill-amber {
+        background: rgba(232, 200, 122, 0.12);
+        border-color: rgba(232, 200, 122, 0.3);
+        color: var(--accent);
+      }
+
+      /* ── LATENCY BADGE ── */
+      .latency-badge {
+        font-size: 10px;
+        color: var(--green);
+        background: rgba(90, 184, 122, 0.1);
+        border: 1px solid rgba(90, 184, 122, 0.25);
+        border-radius: 99px;
+        padding: 1px 8px;
+        letter-spacing: 0.04em;
+      }
+      .latency-badge.slow {
+        color: var(--score-mid);
+        background: rgba(200, 184, 122, 0.1);
+        border-color: rgba(200, 184, 122, 0.25);
+      }
+
+      /* ── SCROLL TRACK ── */
+      .scroll-section {
+        margin-bottom: 2.5rem;
+      }
+      .track-wrap {
+        overflow-x: auto;
+        padding: 0 2.5rem 1rem;
+        scrollbar-width: thin;
+        scrollbar-color: var(--surface2) transparent;
+      }
+      .track-wrap::-webkit-scrollbar {
+        height: 4px;
+      }
+      .track-wrap::-webkit-scrollbar-thumb {
+        background: var(--surface2);
+        border-radius: 2px;
+      }
+      .track {
+        display: flex;
+        gap: 1rem;
+        width: max-content;
+      }
+
+      /* ── CARD ── */
+      .card {
+        width: 185px;
+        flex-shrink: 0;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        overflow: hidden;
+        cursor: pointer;
+        transition:
+          border-color 0.2s,
+          transform 0.2s;
+        position: relative;
+      }
+      .card:hover {
+        border-color: var(--border-hover);
+        transform: translateY(-3px);
+      }
+      .card-poster {
+        height: 120px;
+        background: var(--surface2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.2rem;
+        position: relative;
+        overflow: hidden;
+      }
+      .card-poster::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 50%;
+        background: linear-gradient(transparent, var(--surface));
+      }
+      .card-score {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        font-size: 10px;
+        font-weight: 500;
+        padding: 2px 6px;
+        border-radius: 99px;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+      }
+      .card-actions {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        display: flex;
+        gap: 4px;
+        padding: 6px;
+        opacity: 0;
+        transition: opacity 0.2s;
+        z-index: 2;
+        justify-content: flex-end;
+      }
+      .card:hover .card-actions {
+        opacity: 1;
+      }
+      .card-action-btn {
+        background: rgba(0, 0, 0, 0.75);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 6px;
+        color: var(--text);
+        font-size: 10px;
+        padding: 3px 7px;
+        cursor: pointer;
+        backdrop-filter: blur(4px);
+        transition: background 0.15s;
+        white-space: nowrap;
+      }
+      .card-action-btn:hover {
+        background: rgba(232, 200, 122, 0.25);
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .card-body {
+        padding: 0.65rem;
+      }
+      .card-title {
+        font-family: var(--font-display);
+        font-size: 0.85rem;
+        line-height: 1.3;
+        margin-bottom: 0.35rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .card-genres {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 3px;
+      }
+      .genre-tag {
+        font-size: 10px;
+        color: var(--muted);
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 1px 5px;
+        letter-spacing: 0.04em;
+      }
+
+      /* ── SEARCH ── */
+      .search-wrap {
+        padding: 0 2.5rem 1.5rem;
+      }
+      .search-row {
+        display: flex;
+        gap: 0.75rem;
+        max-width: 560px;
+        align-items: stretch;
+      }
+      .search-inner {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 0.55rem 1rem;
+        transition: border-color 0.2s;
+      }
+      .search-inner:focus-within {
+        border-color: rgba(232, 200, 122, 0.4);
+      }
+      .search-icon {
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .search-inner input {
+        background: none;
+        border: none;
+        outline: none;
+        color: var(--text);
+        font-family: var(--font-body);
+        font-size: 14px;
+        flex: 1;
+      }
+      .search-inner input::placeholder {
+        color: var(--muted);
+      }
+
+      /* ── SEARCH RESULTS PANEL ── */
+      .search-results {
+        margin: 0 2.5rem 2rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+        display: none;
+      }
+      .search-results.active {
+        display: block;
+      }
+      .search-results-header {
+        padding: 0.9rem 1.4rem;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .search-results-header h3 {
+        font-family: var(--font-display);
+        font-size: 0.95rem;
+        font-weight: 400;
+      }
+      .search-results-header h3 em {
+        font-style: italic;
+        color: var(--accent);
+      }
+      .search-results-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
+        gap: 1rem;
+        padding: 1.25rem;
+      }
+
+      /* ── SIMILAR PANEL ── */
+      .similar-section {
+        margin: 0 2.5rem 2.5rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+        display: none;
+      }
+      .similar-section.active {
+        display: block;
+      }
+      .similar-header {
+        padding: 1rem 1.4rem;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .similar-header h3 {
+        font-family: var(--font-display);
+        font-size: 0.95rem;
+        font-weight: 400;
+      }
+      .similar-header .based-on {
+        font-style: italic;
+        color: var(--accent);
+      }
+      .similar-track {
+        display: flex;
+        gap: 1rem;
+        padding: 1.25rem 1.4rem;
+        overflow-x: auto;
+        scrollbar-width: thin;
+        scrollbar-color: var(--surface2) transparent;
+      }
+
+      /* ── TRENDING ── */
+      .trending-section {
+        margin: 0 2.5rem 3rem;
+      }
+      .trending-list {
+        display: flex;
+        flex-direction: column;
+      }
+      .trending-row {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.8rem 1.2rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-top: none;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+      .trending-row:first-child {
+        border-top: 1px solid var(--border);
+        border-radius: 10px 10px 0 0;
+      }
+      .trending-row:last-child {
+        border-radius: 0 0 10px 10px;
+      }
+      .trending-row:hover {
+        background: var(--surface2);
+      }
+      .trending-rank {
+        font-family: var(--font-display);
+        font-size: 1.2rem;
+        font-style: italic;
+        color: var(--muted);
+        width: 26px;
+        text-align: right;
+        flex-shrink: 0;
+      }
+      .trending-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .trending-title {
+        font-weight: 500;
+        font-size: 13px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .trending-genres {
+        font-size: 11px;
+        color: var(--muted);
+        margin-top: 2px;
+      }
+      .trending-actions {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .trending-cta {
+        font-size: 10px;
+        color: var(--muted);
+        border: 1px solid var(--border);
+        border-radius: 99px;
+        padding: 3px 9px;
+        transition:
+          border-color 0.2s,
+          color 0.2s;
+        white-space: nowrap;
+      }
+      .trending-row:hover .trending-cta {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      /* ── RATE MODAL ── */
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 500;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(4px);
+      }
+      .modal-backdrop.open {
+        display: flex;
+      }
+      .modal {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 2rem;
+        width: 380px;
+        max-width: 90vw;
+      }
+      .modal-title {
+        font-family: var(--font-display);
+        font-size: 1.15rem;
+        margin-bottom: 0.3rem;
+      }
+      .modal-movie {
+        font-style: italic;
+        color: var(--accent);
+        font-size: 0.9rem;
+        margin-bottom: 1.5rem;
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .stars {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 1.5rem;
+      }
+      .star {
+        font-size: 1.6rem;
+        cursor: pointer;
+        opacity: 0.25;
+        transition:
+          opacity 0.1s,
+          transform 0.1s;
+      }
+      .star:hover,
+      .star.lit {
+        opacity: 1;
+      }
+      .star:hover {
+        transform: scale(1.15);
+      }
+      .rating-label {
+        font-size: 13px;
+        color: var(--muted);
+        margin-bottom: 1.5rem;
+        min-height: 1.4em;
+      }
+      .modal-actions {
+        display: flex;
+        gap: 0.75rem;
+        justify-content: flex-end;
+      }
+
+      /* ── CACHE PANEL ── */
+      .cache-page {
+        padding: 2.5rem;
+      }
+      .cache-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+      }
+      .cache-header h2 {
+        font-family: var(--font-display);
+        font-size: 1.6rem;
+        font-weight: 400;
+      }
+      .cache-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+      }
+      .cache-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1.25rem 1.4rem;
+      }
+      .cache-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+      }
+      .cache-ns {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+      }
+      .cache-live {
+        font-size: 11px;
+        color: var(--green);
+        background: rgba(90, 184, 122, 0.1);
+        border: 1px solid rgba(90, 184, 122, 0.2);
+        border-radius: 99px;
+        padding: 1px 8px;
+      }
+      .cache-stat-big {
+        font-family: var(--font-display);
+        font-size: 2.2rem;
+        font-style: italic;
+        line-height: 1;
+        margin-bottom: 0.3rem;
+        color: var(--accent);
+      }
+      .cache-stat-label {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .cache-bar-wrap {
+        margin-top: 1rem;
+        background: var(--surface2);
+        border-radius: 99px;
+        height: 3px;
+        overflow: hidden;
+      }
+      .cache-bar {
+        height: 100%;
+        background: var(--accent);
+        border-radius: 99px;
+        transition: width 0.4s ease;
+      }
+      .cache-ttl {
+        font-size: 11px;
+        color: var(--muted);
+        margin-top: 0.5rem;
+      }
+      .cache-bust-section {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1.4rem;
+      }
+      .cache-bust-title {
+        font-size: 14px;
+        font-weight: 500;
+        margin-bottom: 0.4rem;
+      }
+      .cache-bust-desc {
+        font-size: 12px;
+        color: var(--muted);
+        margin-bottom: 1rem;
+        line-height: 1.6;
+      }
+      .cache-bust-row {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+      }
+      .cache-bust-row input {
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 0.45rem 0.75rem;
+        color: var(--text);
+        font-family: var(--font-body);
+        font-size: 14px;
+        width: 120px;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+      .cache-bust-row input:focus {
+        border-color: var(--accent);
+      }
+
+      /* ── STATES ── */
+      .empty {
+        padding: 2.5rem;
+        text-align: center;
+        color: var(--muted);
+      }
+      .empty p {
+        font-size: 13px;
+        margin-top: 0.5rem;
+      }
+      .empty-icon {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+        opacity: 0.4;
+      }
+      .spinner-wrap {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 2rem;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid var(--border);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* ── TOAST ── */
+      .toast {
+        position: fixed;
+        bottom: 2rem;
+        left: 50%;
+        transform: translateX(-50%) translateY(100px);
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 99px;
+        padding: 0.55rem 1.4rem;
+        font-size: 13px;
+        color: var(--muted);
+        transition: transform 0.3s ease;
+        pointer-events: none;
+        z-index: 999;
+      }
+      .toast.show {
+        transform: translateX(-50%) translateY(0);
+      }
+      .toast.success {
+        color: var(--green);
+        border-color: rgba(90, 184, 122, 0.35);
+      }
+      .toast.error {
+        color: var(--red);
+        border-color: rgba(200, 106, 106, 0.35);
+      }
+
+      /* ── DIVIDER ── */
+      .divider {
+        border: none;
+        border-top: 1px solid var(--border);
+        margin: 0 2.5rem 2.5rem;
+      }
+
+      /* ── RESPONSIVE ── */
+      @media (max-width: 640px) {
+        header {
+          padding: 0.9rem 1rem;
+        }
+        .hero {
+          padding: 2rem 1rem 1.5rem;
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        .hero-sub {
+          text-align: left;
+        }
+        .section-label,
+        .search-wrap,
+        .track-wrap {
+          padding-left: 1rem;
+          padding-right: 1rem;
+        }
+        .similar-section,
+        .trending-section,
+        .search-results {
+          margin-left: 1rem;
+          margin-right: 1rem;
+        }
+        .nav-tabs {
+          padding: 0 1rem;
+        }
+        .cache-page {
+          padding: 1.5rem 1rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <!-- HEADER -->
+      <header>
+        <div class="logo">Cine<span>Match</span></div>
+        <div class="header-controls">
+          <div class="user-field">
+            <label>User</label>
+            <input type="number" id="userId" value="1" min="1" />
+          </div>
+          <button class="btn btn-primary" onclick="loadAll()">Load ↗</button>
+          <button
+            class="btn btn-ghost"
+            onclick="showTab('cache')"
+            title="Cache stats"
+          >
+            ⚙ Cache
+          </button>
+        </div>
+      </header>
+
+      <!-- NAV TABS -->
+      <div class="nav-tabs">
+        <button class="tab active" id="tab-home" onclick="showTab('home')">
+          Home
+        </button>
+        <button class="tab" id="tab-search" onclick="showTab('search')">
+          Search
+        </button>
+        <button class="tab" id="tab-trending" onclick="showTab('trending')">
+          Trending
+        </button>
+        <button class="tab" id="tab-cache" onclick="showTab('cache')">
+          Cache & Events
+        </button>
+      </div>
+
+      <!-- ════════════════════════════════════
+       PAGE: HOME
+  ════════════════════════════════════ -->
+      <div class="page active" id="page-home">
+        <div class="hero">
+          <h1 class="hero-title">
+            Your next<br /><em>favourite film</em><br />awaits.
+          </h1>
+          <p class="hero-sub">
+            Personalised picks via a Retrieve → Score → Rank pipeline, cached
+            and event-driven.
+          </p>
+        </div>
+
+        <!-- FOR YOU -->
+        <section class="scroll-section">
+          <div class="section-label">
+            <h2>Picked for you</h2>
+            <span class="pill">Personalised</span>
+            <span
+              class="latency-badge"
+              id="recLatency"
+              style="display: none"
+            ></span>
+          </div>
+          <div class="track-wrap">
+            <div class="track" id="forYouTrack">
+              <div class="spinner-wrap">
+                <div class="spinner"></div>
+                Loading recommendations…
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <hr class="divider" />
+
+        <!-- SIMILAR PANEL (shown on card click) -->
+        <div class="similar-section" id="similarSection">
+          <div class="similar-header">
+            <h3>
+              Because you looked at
+              <span class="based-on" id="basedOnTitle"></span>
+            </h3>
+            <div style="display: flex; gap: 8px; align-items: center">
+              <span class="pill pill-blue" id="simSource" style="display: none"
+                >FAISS ANN</span
+              >
+              <button
+                class="btn btn-ghost"
+                style="font-size: 11px; padding: 3px 10px"
+                onclick="closeSimilar()"
+              >
+                ✕ Close
+              </button>
+            </div>
+          </div>
+          <div class="similar-track" id="similarTrack"></div>
+        </div>
+
+        <!-- TRENDING PREVIEW (home page) -->
+        <section class="trending-section">
+          <div class="section-label" style="padding: 0; margin-bottom: 1rem">
+            <h2>Trending now</h2>
+            <span class="pill">Popular</span>
+          </div>
+          <div id="trendingListHome">
+            <div class="spinner-wrap">
+              <div class="spinner"></div>
+              Loading trending…
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- ════════════════════════════════════
+       PAGE: SEARCH (GET /search?q=)
+  ════════════════════════════════════ -->
+      <div class="page" id="page-search">
+        <div class="hero" style="padding-bottom: 1rem">
+          <div>
+            <h1
+              class="hero-title"
+              style="font-size: clamp(1.6rem, 4vw, 2.6rem)"
+            >
+              Semantic<br /><em>movie search</em>
+            </h1>
+            <p
+              style="color: var(--muted); font-size: 13px; margin-top: 0.75rem"
+            >
+              TF-IDF + FAISS cosine similarity over title &amp; genres
+            </p>
+          </div>
+        </div>
+
+        <div class="search-wrap">
+          <div class="search-row">
+            <div class="search-inner">
+              <span class="search-icon">⌕</span>
+              <input
+                type="text"
+                id="searchInput"
+                placeholder="e.g. space adventure comedy…"
+                onkeydown="if (event.key === 'Enter') doSearch();"
+              />
+            </div>
+            <button class="btn btn-primary" onclick="doSearch()">Search</button>
+          </div>
+        </div>
+
+        <!-- SEARCH RESULTS -->
+        <div
+          class="search-results active"
+          id="searchResultsPanel"
+          style="display: none"
+        >
+          <div class="search-results-header">
+            <h3>Results for <em id="searchQueryLabel"></em></h3>
+            <div style="display: flex; align-items: center; gap: 8px">
+              <span
+                class="pill pill-blue"
+                id="searchLatency"
+                style="display: none"
+              ></span>
+              <button
+                class="btn btn-ghost"
+                style="font-size: 11px; padding: 3px 10px"
+                onclick="closeSearchResults()"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+          <div class="search-results-grid" id="searchResultsGrid"></div>
+        </div>
+
+        <!-- SIMILAR PANEL (search page) -->
+        <div class="similar-section" id="similarSectionSearch">
+          <div class="similar-header">
+            <h3>
+              Similar to <span class="based-on" id="basedOnSearch"></span>
+            </h3>
+            <button
+              class="btn btn-ghost"
+              style="font-size: 11px; padding: 3px 10px"
+              onclick="closeSimilarSearch()"
+            >
+              ✕ Close
+            </button>
+          </div>
+          <div class="similar-track" id="similarTrackSearch"></div>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════
+       PAGE: TRENDING (GET /trending)
+  ════════════════════════════════════ -->
+      <div class="page" id="page-trending">
+        <div class="hero" style="padding-bottom: 1.5rem">
+          <div>
+            <h1
+              class="hero-title"
+              style="font-size: clamp(1.6rem, 4vw, 2.6rem)"
+            >
+              What<br /><em>everyone's watching</em>
+            </h1>
+            <p
+              style="color: var(--muted); font-size: 13px; margin-top: 0.75rem"
+            >
+              Ranked by total rating count across all users
+            </p>
+          </div>
+        </div>
+
+        <section class="trending-section">
+          <div class="section-label" style="padding: 0; margin-bottom: 1rem">
+            <h2>Trending movies</h2>
+            <span class="pill">Popular</span>
+          </div>
+          <div id="trendingListFull">
+            <div class="spinner-wrap">
+              <div class="spinner"></div>
+              Loading…
+            </div>
+          </div>
+        </section>
+
+        <!-- SIMILAR from trending page -->
+        <div class="similar-section" id="similarSectionTrending">
+          <div class="similar-header">
+            <h3>
+              Similar to <span class="based-on" id="basedOnTrending"></span>
+            </h3>
+            <button
+              class="btn btn-ghost"
+              style="font-size: 11px; padding: 3px 10px"
+              onclick="closeSimilarTrending()"
+            >
+              ✕ Close
+            </button>
+          </div>
+          <div class="similar-track" id="similarTrackTrending"></div>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════
+       PAGE: CACHE & EVENTS
+  ════════════════════════════════════ -->
+      <div class="page" id="page-cache">
+        <div class="cache-page">
+          <div class="cache-header">
+            <h2>Cache &amp; Events</h2>
+            <div
+              style="
+                display: flex;
+                gap: 0.75rem;
+                align-items: center;
+                flex-wrap: wrap;
+              "
+            >
+              <span class="pill pill-green" id="cacheStatusBadge">Live</span>
+              <button class="btn btn-ghost" onclick="loadCacheStats()">
+                ↻ Refresh
+              </button>
+            </div>
+          </div>
+
+          <!-- Cache namespace cards -->
+          <div class="cache-grid" id="cacheGrid">
+            <div class="spinner-wrap">
+              <div class="spinner"></div>
+              Fetching stats…
+            </div>
+          </div>
+
+          <!-- Invalidate user cache -->
+          <div class="cache-bust-section">
+            <div class="cache-bust-title">Invalidate user cache</div>
+            <div class="cache-bust-desc">
+              Force-expires a user's recommendation entry so the next
+              <code>/recommend/{id}</code> call re-runs the full pipeline.
+              Mirrors <code>DELETE /cache/user/{id}</code>.
+            </div>
+            <div class="cache-bust-row">
+              <input
+                type="number"
+                id="bustUserId"
+                placeholder="User ID"
+                min="1"
+              />
+              <button class="btn btn-danger" onclick="bustCache()">
+                Invalidate
+              </button>
+            </div>
+          </div>
+
+          <!-- Event log -->
+          <div style="margin-top: 2rem">
+            <div class="section-label" style="padding: 0; margin-bottom: 1rem">
+              <h2>Event log</h2>
+              <span class="pill">Bus activity</span>
+            </div>
+            <div
+              id="eventLog"
+              style="
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: 12px;
+                padding: 1rem;
+                min-height: 100px;
+                font-family: monospace;
+                font-size: 12px;
+                color: var(--muted);
+                line-height: 1.8;
+                max-height: 260px;
+                overflow-y: auto;
+              "
+            >
+              <span style="opacity: 0.4"
+                >No events yet — rate a movie or invalidate a cache to see
+                activity here.</span
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- .shell -->
+
+    <!-- ════════════════════════════════════
+     RATE MODAL  (POST /rate)
+════════════════════════════════════ -->
+    <div class="modal-backdrop" id="rateModal">
+      <div class="modal">
+        <div class="modal-title">Rate this film</div>
+        <span class="modal-movie" id="rateMovieTitle"></span>
+        <div class="stars" id="starsRow">
+          <span class="star" data-v="1">★</span>
+          <span class="star" data-v="2">★</span>
+          <span class="star" data-v="3">★</span>
+          <span class="star" data-v="4">★</span>
+          <span class="star" data-v="5">★</span>
+        </div>
+        <div class="rating-label" id="ratingLabel">Tap a star to rate</div>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" onclick="closeRateModal()">
+            Cancel
+          </button>
+          <button
+            class="btn btn-primary"
+            id="submitRateBtn"
+            onclick="submitRating()"
+            disabled
+          >
+            Submit rating
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+      const API = "http://localhost:8000";
+
+      // ── State ──────────────────────────────────────────────────────────────────
+      let rateState = { movieId: null, movieTitle: null, rating: 0 };
+      let trendingLoaded = false;
+      let eventLogEntries = [];
+
+      // ── Genre → emoji ──────────────────────────────────────────────────────────
+      const genreEmoji = {
+        Action: "🎬",
+        Adventure: "🌄",
+        Animation: "🎨",
+        Comedy: "😄",
+        Crime: "🔍",
+        Documentary: "🎥",
+        Drama: "🎭",
+        Fantasy: "🧙",
+        Horror: "👻",
+        Musical: "🎵",
+        Mystery: "🕵️",
+        Romance: "💛",
+        "Sci-Fi": "🚀",
+        Thriller: "🫀",
+        War: "⚔️",
+        Western: "🤠",
+      };
+
+      function posterFor(genres) {
+        if (!genres?.length) return "🎬";
+        for (const g of genres) if (genreEmoji[g]) return genreEmoji[g];
+        return "🎬";
+      }
+      function scoreColor(s) {
+        if (s >= 70) return "var(--score-high)";
+        if (s >= 40) return "var(--score-mid)";
+        return "var(--score-low)";
+      }
+      function normalizeTitle(m) {
+        return m.title || m[" title"] || "Untitled";
+      }
+
+      // ── Toast ──────────────────────────────────────────────────────────────────
+      function showToast(msg, type = "") {
+        const t = document.getElementById("toast");
+        t.textContent = msg;
+        t.className = "toast show " + type;
+        setTimeout(() => t.classList.remove("show"), 2800);
+      }
+
+      // ── Event log ──────────────────────────────────────────────────────────────
+      function logEvent(msg, color = "var(--muted)") {
+        const now = new Date().toLocaleTimeString();
+        eventLogEntries.unshift(
+          `<span style="color:${color}">[${now}]</span> ${msg}`,
+        );
+        if (eventLogEntries.length > 50) eventLogEntries.pop();
+        const el = document.getElementById("eventLog");
+        if (el) el.innerHTML = eventLogEntries.join("<br>");
+      }
+
+      // ── Tabs ───────────────────────────────────────────────────────────────────
+      function showTab(name) {
+        document
+          .querySelectorAll(".page")
+          .forEach((p) => p.classList.remove("active"));
+        document
+          .querySelectorAll(".tab")
+          .forEach((t) => t.classList.remove("active"));
+        document.getElementById("page-" + name)?.classList.add("active");
+        document.getElementById("tab-" + name)?.classList.add("active");
+        if (name === "cache") loadCacheStats();
+        if (name === "trending" && !trendingLoaded) {
+          loadTrendingFull();
+          trendingLoaded = true;
+        }
+      }
+
+      // ── Card builder ───────────────────────────────────────────────────────────
+      function makeCard(m, onSimilarClick) {
+        const genres = Array.isArray(m.genres)
+          ? m.genres
+          : (m.genres || "").split("|").filter(Boolean);
+        const title = normalizeTitle(m);
+        const score = m.score != null ? m.score : null;
+
+        const card = document.createElement("div");
+        card.className = "card";
+
+        const simFn =
+          onSimilarClick ||
+          (() =>
+            triggerSimilar(m.movieId, title, "similarSection", "similarTrack"));
+        card.onclick = simFn;
+
+        card.innerHTML = `
+    <div class="card-poster">
+      ${posterFor(genres)}
+      ${score != null ? `<div class="card-score" style="color:${scoreColor(score)}">${score}%</div>` : ""}
+      <div class="card-actions" onclick="event.stopPropagation()">
+        <button class="card-action-btn" onclick="openRateModal(${m.movieId}, \`${title.replace(/`/g, "'")}\`)">★ Rate</button>
+        <button class="card-action-btn" onclick="${onSimilarClick ? `triggerSimilarSearch(${m.movieId}, \`${title.replace(/`/g, "'")}\`)` : `triggerSimilar(${m.movieId}, \`${title.replace(/`/g, "'")}\`, 'similarSection', 'similarTrack')`}">Similar</button>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="card-title">${title}</div>
+      <div class="card-genres">${genres
+        .slice(0, 3)
+        .map((g) => `<span class="genre-tag">${g}</span>`)
+        .join("")}</div>
+    </div>`;
+        return card;
+      }
+
+      function renderTrack(trackEl, movies, cardFactory) {
+        trackEl.innerHTML = "";
+        if (!movies?.length) {
+          trackEl.innerHTML = `<div class="empty"><div class="empty-icon">🎞</div><p>Nothing found</p></div>`;
+          return;
+        }
+        movies.forEach((m) =>
+          trackEl.appendChild(cardFactory ? cardFactory(m) : makeCard(m)),
+        );
+      }
+
+      // ── Load all (home) ────────────────────────────────────────────────────────
+      async function loadAll() {
+        const uid = parseInt(document.getElementById("userId").value) || 1;
+        closeSimilar();
+        loadForYou(uid);
+        loadTrendingHome();
+      }
+
+      // ── GET /recommend/{user_id} ───────────────────────────────────────────────
+      async function loadForYou(uid) {
+        const track = document.getElementById("forYouTrack");
+        const badge = document.getElementById("recLatency");
+        track.innerHTML = `<div class="spinner-wrap"><div class="spinner"></div>Personalising via pipeline…</div>`;
+        badge.style.display = "none";
+        try {
+          const t0 = performance.now();
+          const res = await fetch(`${API}/recommend/${uid}`);
+          const data = await res.json();
+          const ms = data.latency_ms ?? Math.round(performance.now() - t0);
+          renderTrack(track, data.recommendations);
+          if (!data.recommendations?.length)
+            showToast("No history — showing trending");
+          badge.textContent = ms < 5 ? `⚡ ${ms} ms (cache hit)` : `${ms} ms`;
+          badge.className = "latency-badge" + (ms < 5 ? "" : " slow");
+          badge.style.display = "";
+          logEvent(
+            `GET /recommend/${uid} → ${data.recommendations?.length ?? 0} results in ${ms} ms`,
+            ms < 5 ? "var(--green)" : "var(--accent)",
+          );
+        } catch (e) {
+          track.innerHTML = `<div class="empty"><div class="empty-icon">⚡</div><p>Could not reach the API at <code>${API}</code></p></div>`;
+        }
+      }
+
+      // ── GET /trending ──────────────────────────────────────────────────────────
+      async function loadTrendingHome() {
+        renderTrendingInto("trendingListHome", (m, i) =>
+          makeTrendingRow(m, i, "home"),
+        );
+      }
+      async function loadTrendingFull() {
+        renderTrendingInto("trendingListFull", (m, i) =>
+          makeTrendingRow(m, i, "trending"),
+        );
+      }
+
+      async function renderTrendingInto(containerId, rowFactory) {
+        const list = document.getElementById(containerId);
+        list.innerHTML = `<div class="spinner-wrap"><div class="spinner"></div>Loading…</div>`;
+        try {
+          const res = await fetch(`${API}/trending`);
+          const data = await res.json();
+          const movies = data.trending || [];
+          if (!movies.length) {
+            list.innerHTML = `<div class="empty"><p>Nothing trending</p></div>`;
+            return;
+          }
+          list.innerHTML = "";
+          const ul = document.createElement("div");
+          ul.className = "trending-list";
+          movies.forEach((m, i) => ul.appendChild(rowFactory(m, i)));
+          list.appendChild(ul);
+          logEvent(`GET /trending → ${movies.length} movies`);
+        } catch (e) {
+          list.innerHTML = `<div class="empty"><div class="empty-icon">⚡</div><p>API unreachable</p></div>`;
+        }
+      }
+
+      function makeTrendingRow(m, i, ctx) {
+        const genres = Array.isArray(m.genres)
+          ? m.genres
+          : (m.genres || "").split("|").filter(Boolean);
+        const title = normalizeTitle(m);
+        const row = document.createElement("div");
+        row.className = "trending-row";
+
+        const simTarget =
+          ctx === "trending"
+            ? `triggerSimilarTrending(${m.movieId}, \`${title.replace(/`/g, "'")}\`)`
+            : `triggerSimilar(${m.movieId}, \`${title.replace(/`/g, "'")}\`, 'similarSection', 'similarTrack')`;
+
+        row.innerHTML = `
+    <div class="trending-rank">${i + 1}</div>
+    <div class="trending-info">
+      <div class="trending-title">${title}</div>
+      <div class="trending-genres">${genres.slice(0, 4).join(" · ")}</div>
+    </div>
+    <div class="trending-actions">
+      <span class="trending-cta" onclick="${simTarget}">Similar →</span>
+      <span class="trending-cta" onclick="event.stopPropagation();openRateModal(${m.movieId}, \`${title.replace(/`/g, "'")}\`)">★</span>
+    </div>`;
+        row.onclick = () => {
+          eval(simTarget);
+        };
+        return row;
+      }
+
+      // ── GET /similar/{movie_id} ────────────────────────────────────────────────
+      async function triggerSimilar(
+        movieId,
+        title,
+        sectionId = "similarSection",
+        trackId = "similarTrack",
+      ) {
+        const sec = document.getElementById(sectionId);
+        const track = document.getElementById(trackId);
+        const label = sec.querySelector(".based-on");
+        const badge = document.getElementById("simSource");
+        sec.classList.add("active");
+        if (label) label.textContent = title || `#${movieId}`;
+        if (badge) {
+          badge.style.display = "";
+        }
+        track.innerHTML = `<div class="spinner-wrap"><div class="spinner"></div>Finding similar via FAISS…</div>`;
+        sec.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        try {
+          const res = await fetch(`${API}/similar/${movieId}`);
+          const data = await res.json();
+          if (data.error) {
+            track.innerHTML = `<div class="empty"><p>${data.error}</p></div>`;
+            return;
+          }
+          renderTrack(track, data.similar_movies, (m) =>
+            makeCard(m, () =>
+              triggerSimilar(m.movieId, normalizeTitle(m), sectionId, trackId),
+            ),
+          );
+          logEvent(
+            `GET /similar/${movieId} (${title}) → ${data.similar_movies?.length ?? 0} results`,
+            "var(--blue)",
+          );
+        } catch (e) {
+          track.innerHTML = `<div class="empty"><p>Could not load similar movies</p></div>`;
+        }
+      }
+
+      function triggerSimilarSearch(mid, title) {
+        triggerSimilar(
+          mid,
+          title,
+          "similarSectionSearch",
+          "similarTrackSearch",
+        );
+      }
+      function triggerSimilarTrending(mid, title) {
+        triggerSimilar(
+          mid,
+          title,
+          "similarSectionTrending",
+          "similarTrackTrending",
+        );
+      }
+
+      function closeSimilar() {
+        document.getElementById("similarSection")?.classList.remove("active");
+      }
+      function closeSimilarSearch() {
+        document
+          .getElementById("similarSectionSearch")
+          ?.classList.remove("active");
+      }
+      function closeSimilarTrending() {
+        document
+          .getElementById("similarSectionTrending")
+          ?.classList.remove("active");
+      }
+
+      // ── GET /search?q= ─────────────────────────────────────────────────────────
+      async function doSearch() {
+        const q = document.getElementById("searchInput").value.trim();
+        if (!q) {
+          showToast("Enter a search term");
+          return;
+        }
+
+        const panel = document.getElementById("searchResultsPanel");
+        const grid = document.getElementById("searchResultsGrid");
+        const queryLabel = document.getElementById("searchQueryLabel");
+        const latBadge = document.getElementById("searchLatency");
+
+        panel.style.display = "block";
+        grid.innerHTML = `<div class="spinner-wrap"><div class="spinner"></div>Searching…</div>`;
+        queryLabel.textContent = q;
+        latBadge.style.display = "none";
+        closeSimilarSearch();
+
+        try {
+          const t0 = performance.now();
+          const res = await fetch(`${API}/search?q=${encodeURIComponent(q)}`);
+          const data = await res.json();
+          const ms = Math.round(performance.now() - t0);
+          grid.innerHTML = "";
+          if (!data.results?.length) {
+            grid.innerHTML = `<div class="empty" style="padding:2rem"><p>No results for "${q}"</p></div>`;
+          } else {
+            data.results.forEach((m) => {
+              const card = makeCard(m, () =>
+                triggerSimilarSearch(m.movieId, normalizeTitle(m)),
+              );
+              grid.appendChild(card);
+            });
+          }
+          latBadge.textContent = ms < 5 ? `⚡ ${ms} ms (cache)` : `${ms} ms`;
+          latBadge.style.display = "";
+          logEvent(
+            `GET /search?q="${q}" → ${data.results?.length ?? 0} results in ${ms} ms`,
+            "var(--blue)",
+          );
+        } catch (e) {
+          grid.innerHTML = `<div class="empty"><p>Search failed — is the API running?</p></div>`;
+        }
+      }
+
+      function closeSearchResults() {
+        document.getElementById("searchResultsPanel").style.display = "none";
+      }
+
+      // ── POST /rate ─────────────────────────────────────────────────────────────
+      function openRateModal(movieId, title) {
+        rateState = { movieId, movieTitle: title, rating: 0 };
+        document.getElementById("rateMovieTitle").textContent = title;
+        document.getElementById("ratingLabel").textContent =
+          "Tap a star to rate";
+        document.getElementById("submitRateBtn").disabled = true;
+        setStars(0);
+        document.getElementById("rateModal").classList.add("open");
+      }
+
+      function closeRateModal() {
+        document.getElementById("rateModal").classList.remove("open");
+      }
+
+      const ratingLabels = [
+        "",
+        "Didn't enjoy it",
+        "It was okay",
+        "Pretty good",
+        "Really enjoyed it",
+        "Absolutely loved it",
+      ];
+
+      function setStars(n) {
+        document
+          .querySelectorAll(".star")
+          .forEach((s, i) => s.classList.toggle("lit", i < n));
+      }
+
+      document.querySelectorAll(".star").forEach((s) => {
+        s.addEventListener("click", () => {
+          const v = parseInt(s.dataset.v);
+          rateState.rating = v;
+          setStars(v);
+          document.getElementById("ratingLabel").textContent =
+            ratingLabels[v] || "";
+          document.getElementById("submitRateBtn").disabled = false;
+        });
+        s.addEventListener("mouseenter", () => setStars(parseInt(s.dataset.v)));
+        s.addEventListener("mouseleave", () => setStars(rateState.rating));
+      });
+
+      async function submitRating() {
+        const { movieId, movieTitle, rating } = rateState;
+        if (!rating) return;
+        const uid = parseInt(document.getElementById("userId").value) || 1;
+
+        document.getElementById("submitRateBtn").textContent = "Submitting…";
+        document.getElementById("submitRateBtn").disabled = true;
+
+        try {
+          const res = await fetch(`${API}/rate`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId: uid, movieId, rating }),
+          });
+          const data = await res.json();
+          closeRateModal();
+          showToast(
+            `Rated "${movieTitle}" ${rating}★ — recs updating…`,
+            "success",
+          );
+          logEvent(
+            `POST /rate → uid=${uid} mid=${movieId} rating=${rating} — cache invalidated, rebuild queued`,
+            "var(--green)",
+          );
+          // Reload recs after a short delay (background rebuild)
+          setTimeout(() => loadForYou(uid), 1500);
+        } catch (e) {
+          showToast("Rating failed — API unreachable", "error");
+        } finally {
+          document.getElementById("submitRateBtn").textContent =
+            "Submit rating";
+          document.getElementById("submitRateBtn").disabled = false;
+        }
+      }
+
+      // ── GET /cache/stats ───────────────────────────────────────────────────────
+      async function loadCacheStats() {
+        const grid = document.getElementById("cacheGrid");
+        grid.innerHTML = `<div class="spinner-wrap"><div class="spinner"></div>Fetching…</div>`;
+        try {
+          const res = await fetch(`${API}/cache/stats`);
+          const data = await res.json();
+          grid.innerHTML = "";
+
+          const ns = [
+            { key: "recommendations", label: "rec:", color: "var(--accent)" },
+            { key: "similarity", label: "sim:", color: "var(--blue)" },
+            { key: "search", label: "search:", color: "var(--green)" },
+            { key: "trending", label: "trending:", color: "var(--score-mid)" },
+          ];
+
+          ns.forEach(({ key, label, color }) => {
+            const stat = data[key] || {};
+            const total = stat.total_keys ?? 0;
+            const live = stat.live_keys ?? 0;
+            const ttl = stat.ttl ?? 0;
+            const pct = total > 0 ? Math.round((live / total) * 100) : 0;
+
+            const card = document.createElement("div");
+            card.className = "cache-card";
+            card.innerHTML = `
+        <div class="cache-card-header">
+          <span class="cache-ns">${label}</span>
+          <span class="cache-live">${live} live</span>
+        </div>
+        <div class="cache-stat-big" style="color:${color}">${total}</div>
+        <div class="cache-stat-label">total keys</div>
+        <div class="cache-bar-wrap"><div class="cache-bar" style="width:${pct}%;background:${color}"></div></div>
+        <div class="cache-ttl">TTL ${ttl}s · ${pct}% entries live</div>`;
+            grid.appendChild(card);
+          });
+
+          logEvent(`GET /cache/stats fetched`, "var(--muted)");
+        } catch (e) {
+          grid.innerHTML = `<div class="empty"><p>Could not reach <code>/cache/stats</code></p></div>`;
+        }
+      }
+
+      // ── DELETE /cache/user/{id} ────────────────────────────────────────────────
+      async function bustCache() {
+        const uid = parseInt(document.getElementById("bustUserId").value);
+        if (!uid) {
+          showToast("Enter a user ID");
+          return;
+        }
+        try {
+          const res = await fetch(`${API}/cache/user/${uid}`, {
+            method: "DELETE",
+          });
+          const data = await res.json();
+          const n = data.invalidated ?? 0;
+          showToast(
+            `Invalidated ${n} cache entr${n === 1 ? "y" : "ies"} for user ${uid}`,
+            "success",
+          );
+          logEvent(
+            `DELETE /cache/user/${uid} → ${n} keys removed`,
+            "var(--red)",
+          );
+          loadCacheStats();
+        } catch (e) {
+          showToast("Cache invalidation failed", "error");
+        }
+      }
+
+      // ── Boot ───────────────────────────────────────────────────────────────────
+      loadAll();
+    </script>
+  </body>
+</html>
