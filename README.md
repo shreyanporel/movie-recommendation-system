@@ -12,7 +12,7 @@ A full-stack movie recommendation system using:
 - Similar movie suggestions
 
 ## How to Run
-
+### Open folder 'Phase 1':
 ### Backend
 uvicorn phase1:app --reload
 
@@ -35,7 +35,7 @@ Open prefront.html in browser
 - Trending movies
 
 ## How to Run
-
+### Open folder 'Phase 2':
 ### Backend
 uvicorn phase2:app --reload
 
